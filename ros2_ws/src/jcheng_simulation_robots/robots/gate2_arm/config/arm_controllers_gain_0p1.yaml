@@ -1,0 +1,39 @@
+# ros2_control controllers for the migrated 2-DoF simulation arm.
+#
+# gz_ros2_control runs the controller_manager inside Gazebo in the /sim
+# namespace (see the <ros> block in urdf/simple_arm.xacro), so the top-level
+# keys are fully qualified. Action surface:
+#   /sim/arm_controller/follow_joint_trajectory
+#   /sim/joint_states
+#
+# V2 profile: gz_ros2_control position gain override. The only difference from
+# the other V2 profile is the gain value, checked by the package test.
+/sim/controller_manager:
+  ros__parameters:
+    update_rate: 100  # 控制更新频率 (Hz)
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+/sim/arm_controller:
+  ros__parameters:
+    joints:
+      - joint1
+      - joint2
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity
+
+    open_loop_control: false
+    allow_nonzero_velocity_at_trajectory_start: true
+
+/sim/gz_ros_control:
+  ros__parameters:
+    position_proportional_gain: 0.1

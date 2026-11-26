@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MIGRATED 2-DOF SIMULATION ARM (Gate-2 plant).
+
+  Source: jcheng-manipulation/ros2_ws/src/arm_description/urdf/simple_arm.xacro
+  at commit a08b8b6 (2026-11-26). Geometry, inertias, joint axes and limits are
+  copied unchanged. Adaptations for this repository:
+
+    * the controller_config default points at this package's share directory;
+    * gz_ros2_control runs in the /sim namespace, with robot_description
+      remapped to the un-namespaced topic published by robot_state_publisher,
+      so no un-namespaced /joint_states or /controller_manager appears on
+      domain 43;
+    * Gazebo material blocks were added so the model is visible in the GUI.
+
+  This is primitive geometry only: no mesh, no vendor asset, no measured
+  ArmPi Ultra geometry. It exercises ros2_control, JTC action semantics and
+  the fail-closed bringup chain; it is not a plant for manipulation claims.
+-->
+<robot name="simple_arm" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- The launch file may replace this validated compatibility default. -->
+  <xacro:arg name="controller_config"
+             default="$(find jcheng_simulation_robots)/robots/gate2_arm/config/arm_controllers.yaml"/>
+
+  <!-- ==================== PROPERTIES ==================== -->
+  <!-- base_link -->
+  <xacro:property name="base_r" value="0.1"/>
+  <xacro:property name="base_h" value="0.1"/>
+  <xacro:property name="base_m" value="5.0"/>
+
+  <!-- link1 -->
+  <xacro:property name="link1_r" value="0.05"/>
+  <xacro:property name="link1_h" value="0.6"/>
+  <xacro:property name="link1_m" value="2.0"/>
+
+  <!-- link2 -->
+  <xacro:property name="link2_r" value="0.04"/>
+  <xacro:property name="link2_h" value="0.4"/>
+  <xacro:property name="link2_m" value="1.0"/>
+
+  <!-- ==================== MACROS ==================== -->
+  <!-- Solid-cylinder inertia about an upward local z axis; the caller passes
+       the centre-of-mass pose as a block. -->
+  <xacro:macro name="cylinder_inertial_z" params="m r h *origin">
+    <inertial>
+      <xacro:insert_block name="origin"/>
+      <mass value="${m}"/>
+      <inertia
+        ixx="${(m/12.0) * (3*r*r + h*h)}" ixy="0.0" ixz="0.0"
+        iyy="${(m/12.0) * (3*r*r + h*h)}" iyz="0.0"
+        izz="${(m/2.0) * (r*r)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- ==================== BASE LINK ==================== -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${base_h/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${base_h}" radius="${base_r}"/>
+      </geometry>
+      <material name="dark_gray">
+        <color rgba="0.3 0.3 0.3 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${base_h/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${base_h}" radius="${base_r}"/>
+      </geometry>
+    </collision>
+    <xacro:cylinder_inertial_z m="${base_m}" r="${base_r}" h="${base_h}">
+      <origin xyz="0 0 ${base_h/2}" rpy="0 0 0"/>
+    </xacro:cylinder_inertial_z>
+  </link>
+
+  <!-- ==================== LINK 1 ==================== -->
+  <link name="link1">
+    <visual>
+      <origin xyz="0 0 ${link1_h/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${link1_h}" radius="${link1_r}"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.1 0.3 0.8 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${link1_h/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${link1_h}" radius="${link1_r}"/>
+      </geometry>
+    </collision>
+    <xacro:cylinder_inertial_z m="${link1_m}" r="${link1_r}" h="${link1_h}">
+      <origin xyz="0 0 ${link1_h/2}" rpy="0 0 0"/>
+    </xacro:cylinder_inertial_z>
+  </link>
+
+  <!-- ==================== LINK 2 ==================== -->
+  <link name="link2">
+    <visual>
+      <origin xyz="0 0 ${link2_h/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${link2_h}" radius="${link2_r}"/>
+      </geometry>
+      <material name="orange">
+        <color rgba="0.9 0.5 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${link2_h/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${link2_h}" radius="${link2_r}"/>
+      </geometry>
+    </collision>
+    <xacro:cylinder_inertial_z m="${link2_m}" r="${link2_r}" h="${link2_h}">
+      <origin xyz="0 0 ${link2_h/2}" rpy="0 0 0"/>
+    </xacro:cylinder_inertial_z>
+  </link>
+
+  <!-- ==================== JOINT 1 ==================== -->
+  <joint name="joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <!-- Mounted on the top surface of base_link. -->
+    <origin xyz="0 0 ${base_h}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14159" upper="3.14159" effort="100.0" velocity="3.0"/>
+  </joint>
+
+  <!-- ==================== JOINT 2 ==================== -->
+  <joint name="joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <!-- Mounted on the top surface of link1. -->
+    <origin xyz="0 0 ${link1_h}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14159" upper="3.14159" effort="50.0" velocity="3.0"/>
+  </joint>
+
+  <!-- ==================== GZ_ROS2_CONTROL ==================== -->
+  <gazebo>
+    <plugin filename="libgz_ros2_control-system.so"
+            name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <ros>
+        <namespace>/sim</namespace>
+        <!-- The controller_manager subscribes to robot_description in its own
+             namespace; remap it to the un-namespaced topic published by
+             robot_state_publisher. -->
+        <remapping>robot_description:=/robot_description</remapping>
+      </ros>
+      <parameters>$(arg controller_config)</parameters>
+    </plugin>
+  </gazebo>
+
+  <!-- ==================== ROS 2 CONTROL ==================== -->
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+
+    <joint name="joint1">
+      <command_interface name="position">
+        <param name="min">-3.14159</param>
+        <param name="max">3.14159</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="joint2">
+      <command_interface name="position">
+        <param name="min">-3.14159</param>
+        <param name="max">3.14159</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <!-- ==================== GAZEBO MATERIALS ==================== -->
+  <gazebo reference="base_link">
+    <material>
+      <diffuse>0.30 0.30 0.30 1</diffuse>
+      <ambient>0.30 0.30 0.30 1</ambient>
+    </material>
+  </gazebo>
+  <gazebo reference="link1">
+    <material>
+      <diffuse>0.10 0.30 0.80 1</diffuse>
+      <ambient>0.10 0.30 0.80 1</ambient>
+    </material>
+  </gazebo>
+  <gazebo reference="link2">
+    <material>
+      <diffuse>0.90 0.50 0.10 1</diffuse>
+      <ambient>0.90 0.50 0.10 1</ambient>
+    </material>
+  </gazebo>
+
+</robot>

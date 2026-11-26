@@ -22,50 +22,69 @@ members. The split is:
 | Concern | Owner |
 |---|---|
 | Scenario definition, fault injection, pass/fail and report writing | `jcheng-system` / `jcheng_testkit` |
-| Virtual plant, robot model, sensors, controllers and bridges | `jcheng-simulation` |
+| Robot catalog, virtual plant, sensors, controllers and bridges | `jcheng-simulation` |
 
-Keeping the plant in its own repository lets perception, mobile and system work
-reuse the same simulated streams without importing the system test runner, and
-gives the plant its own version, gate and evidence.
+## 2. One engine, many robots
 
-## 2. Domain isolation
+```text
+robots/<id>/robot.yaml ──> profile loader/validator ──> generic launch
+        │                         │                        │
+        ├── urdf/*.xacro          │                        ├── backend:=mock
+        ├── config/*.yaml         │                        └── backend:=gz
+        ├── worlds/*.sdf          │
+        └── bridge config         └── strict controller YAML selection
+```
+
+- `jcheng_simulation_robots` is the only plant implementation.
+- `robots/<id>/` holds device data; the profile
+  (`jcheng.simulation_robot.v1`) is the single source of truth for command
+  joints, limits, controllers, sensor topics, world and mock behaviour.
+- `launch/robot.launch.py robot:=<id>` builds either backend from the profile.
+- `launch/display.launch.py robot:=<id> gui:=true` shows the model in RViz.
+
+The schema, the add-a-device steps and the asset policy are in
+[MULTI_ROBOT.md](MULTI_ROBOT.md). The layout decision is
+[ADR 0003](adr/0003-multi-robot-engine.md).
+
+## 3. Domain isolation
 
 | Control | Implementation |
 |---|---|
-| ROS domain | The launch sets `ROS_DOMAIN_ID` to the `domain_id` argument. `_validate_domain()` raises if the value is not `43`; no node is started. |
-| Gazebo transport | The launch sets `GZ_PARTITION=jcheng-sim`, so a robot's Gazebo process on the same host cannot collide. |
-| ROS namespace | Every plant **data** topic is `/clock` or starts with `/sim/`; standard ROS topics (`/tf`, `/tf_static`, `/rosout`, `/parameter_events`, `/robot_description`) also exist. |
+| ROS domain | Every engine launch sets `ROS_DOMAIN_ID` to the `domain_id` argument. `_validate_domain()` raises if the value is not `43`; no node is started. |
+| Gazebo transport | The Gazebo launch sets `GZ_PARTITION=jcheng-sim`, so a robot's Gazebo process on the same host cannot collide. |
+| ROS namespace | Every plant **data** topic is `/clock` or starts with `/sim/`; standard ROS topics (`/tf`, `/tf_static`, `/rosout`, `/parameter_events`, `/robot_description`) also exist. `gz_ros2_control` and the controller nodes live in `/sim`. |
 | Vendor topics | No `/ros_robot_controller/*`, `/joint_states` (vendor name) or other vendor topic is published. |
+| Per-domain exclusivity | One plant at a time: every robot claims `/sim/controller_manager` and its own controller actions. |
 
 Domain isolation is an **environment and naming** control, not a security
 boundary. A malicious local process can still set `ROS_DOMAIN_ID=43`; SROS2 is
-not enforced in v0.1. The plant never joins 0/41/42, and a capability process
-that mistakenly joins 43 would see only simulated data, but the reverse
-(malicious overrides) is out of scope.
+not enforced in v0.1.
 
-## 3. Truth model
+## 4. Truth model
 
 - The `/sim/` prefix is mandatory for plant data topics.
-- `/sim/truth/source` is a transient-local `std_msgs/String` with the value
-  `simulated`.
+- `/sim/truth/source` is a transient-local `std_msgs/String` with the profile's
+  label (`simulated`). The mock node publishes it; `truth_publisher` publishes
+  it for Gazebo backends.
 - `/sim/joint_states` is plant state. It resembles a measurement, but it is
   **not** a bus read and must never be compared with the robot's
   `GetBusServoState` as if both were measurements.
 - Mock and Gazebo results are never reported as hardware validation, and no
   result here is an L5 result.
 
-## 4. Backends
+## 5. Backends
 
 | Property | `backend:=mock` | `backend:=gz` |
 |---|---|---|
 | Runtime | ROS 2 only | ROS 2 Jazzy + Gazebo Harmonic |
-| Joint input | `/sim/joint_command` `JointState` positions | `/sim/{arm,gripper}_controller/follow_joint_trajectory` actions |
-| Joint state | `/sim/joint_states` at 50 Hz | `/sim/joint_states` from `joint_state_broadcaster` at 100 Hz |
-| Plant dynamics | First-order, rate-limited, clamped | Gazebo physics + `joint_trajectory_controller` at 100 Hz |
-| Scan | Synthetic raycast, 360 beams, 10 Hz | GPU lidar, 360 beams, 10 Hz |
-| Camera | Not modeled | 640×480 camera, 10 Hz, nominal mount |
-| Clock | Wall clock (`use_sim_time: false`) | Gazebo `/clock` (`use_sim_time: true`) |
-| Determinism | Deterministic for a fixed target/dt sequence | Not bit-reproducible across hosts/versions |
+| Joint input | profile `joint_command` (`JointState` positions) | `<manager>/<controller>/follow_joint_trajectory` |
+| Joint state | profile `joint_states` at `mock.rate_hz` | `joint_state_broadcaster` at the controller rate |
+| Plant dynamics | First-order, rate-limited, clamped | Gazebo physics + `joint_trajectory_controller` |
+| Scan | synthetic raycast, only when `mock.scan` exists | profile sensors through `ros_gz_bridge` |
+| Camera | not modelled | profile sensors through `ros_gz_bridge` |
+| Clock | wall clock (`use_sim_time: false`) | Gazebo `/clock` (`use_sim_time: true`) |
+| Truth | mock node | `truth_publisher` |
+| Determinism | deterministic for a fixed target/dt sequence | not bit-reproducible across hosts/versions |
 
 The two backends do not share a command interface in v0.1. A scenario that must
 work on both needs a small adapter (M5); this asymmetry is intentional and
@@ -74,62 +93,60 @@ documented rather than hidden behind a lowest-common-denominator API.
 ### Gazebo controller details
 
 - `gz_ros2_control` places the controller_manager and controller nodes in the
-  `/sim` namespace via the `<ros><namespace>/sim</namespace></ros>` block.
-- The controller_manager subscribes to `robot_description`; the plugin remaps
-  `robot_description:=/robot_description` so it receives the
-  `robot_state_publisher` topic.
-- The parameter file uses fully qualified node keys
-  (`/sim/controller_manager`, `/sim/arm_controller`,
-  `/sim/gripper_controller`). Unqualified keys are ignored and the spawner
-  fails with "The 'type' param was not defined"; this was observed and fixed
-  during the 2026-11-26 offline run.
+  `/sim` namespace via the `<ros><namespace>/sim</namespace></ros>` block in
+  each catalog URDF.
+- The plugin remaps `robot_description:=/robot_description` so the
+  controller_manager receives the `robot_state_publisher` topic.
+- Controller YAML keys are fully qualified (`/sim/controller_manager`,
+  `/sim/<controller>`). Unqualified keys are ignored by ROS 2 and the spawner
+  fails with "The 'type' param was not defined"; the profile loader rejects
+  them before Gazebo starts.
 - The controller_manager logs "Enforcing command limits is disabled. Command
   limits from URDF will be ignored." The URDF limits are therefore **not**
   enforced by ros2_control; Gazebo's own joint limits are the only physical
   bound. The mock backend does clamp. Do not claim controller-level limit
   enforcement on the Gazebo path.
+- A profile may declare a `gain_node` and named controller profiles (for
+  example `gain_0p1`); the selected YAML must contain the declared
+  `position_proportional_gain` as a float.
 
-## 5. Data flow
+## 6. Startup and failure semantics
+
+A Gazebo plant is **fail-closed**:
+
+1. `spawn` starts 3 s after the launch so `robot_state_publisher` can publish
+   `/robot_description`.
+2. Each controller in the profile's `startup_order` starts only after the
+   previous process exits 0.
+3. Every stage has a wall deadline (`startup_timeout_s`, default 60 s); a
+   missed deadline shuts the launch down naming the stage.
+4. `robot_state_publisher`, the `/clock` bridge or the sensor bridge exiting
+   shuts the launch down; there is no silent fallback.
+
+The fail-closed chain is shared by every robot. The ArmPi backend used fixed
+8 s/12 s timers in v0.1; it now uses the same chain (re-verified offline).
+
+## 7. Data flow
 
 ```text
 mock backend
-  test/scenario ──/sim/joint_command──> mock plant (first-order, clamped)
-                                          ├──/sim/joint_states──> consumers
-                                          ├──/sim/scan──────────> consumers
-                                          └──/sim/truth/source──> consumers
+  scenario ──<profile joint_command>──> generic mock plant
+                                          ├──<profile joint_states>──> consumers
+                                          ├──<profile scan>─────────> consumers (if declared)
+                                          └──<profile truth>────────> consumers
 
 Gazebo backend
-  scenario ──FollowJointTrajectory──> /sim/arm_controller
-                                      /sim/gripper_controller
+  scenario ──FollowJointTrajectory──> /sim/<controller>
                                             │ gz_ros2_control
                                             ▼
                                         Gazebo plant
                                           ├──/sim/joint_states (JTC + broadcaster)
-                                          ├──/sim/scan (GPU lidar + bridge)
-                                          ├──/sim/camera/image (camera + bridge)
-                                          ├──/sim/camera/camera_info
-                                          └──/clock
+                                          ├──/sim/<sensor topics> (bridge)
+                                          ├──/clock
+                                          └──/sim/truth/source
 ```
 
-`robot_state_publisher` consumes `/sim/joint_states` and the URDF to publish
-`/tf` and `/tf_static` on domain 43.
-
-## 6. Failure semantics
-
-| Condition | Behavior |
-|---|---|
-| `domain_id != 43` | Launch raises before starting any node. No fallback. |
-| Gazebo missing or world invalid | Launch/Gazebo exits; no mock fallback. |
-| Controller spawn fails | `spawner` exits non-zero; the launch log shows it; no silent substitution. |
-| `robot_description` missing | The controller_manager waits and logs; controllers never activate. |
-| Unknown joint in `/sim/joint_command` | The mock rejects the whole command and logs a throttled warning. |
-| Command gap > 500 ms | The mock holds the last targets and logs once. |
-| Sensor rendering failure | Gazebo logs the error; no fake scan/camera data is generated. |
-
-There is no e-stop, no brake and no safety-rated stop in this repository; the
-plant is a simulator.
-
-## 7. Contract gap
+## 8. Contract gap
 
 `capability-manifest.v1` (interfaces v0.1.0) has:
 
@@ -144,22 +161,40 @@ never registered as a capability. The proper fix is an interfaces revision
 (M3 in [ROADMAP](../ROADMAP.md)); until then, do not "correct" the values
 silently.
 
-## 8. Boundaries with other repositories
+## 9. Boundaries with other repositories
 
 - **`jcheng-system`** owns `ExecuteMotion`, leases, deadman, the safety state
   machine, the vendor bridge and the real hardware. The plant never publishes a
   vendor topic and never calls the system API. `jcheng_testkit` may drive the
   plant on domain 43 in M5.
-- **`jcheng-mobile`** consumes `/scan`; it can consume `/sim/scan` offline, but
-  this repository does not depend on it and does not publish `/cmd_vel`.
-- **`jcheng-perception`** consumes camera/depth/TF. v0.1 publishes a camera
-  image and camera_info, but no depth stream; a wrist-camera model with a
-  measured extrinsic is M4.
+- **`jcheng-mobile`** consumes `/scan`; it can consume a simulated scan offline,
+  but this repository does not depend on it and does not publish `/cmd_vel`.
+- **`jcheng-perception`** consumes camera/depth/TF. The ArmPi profile publishes
+  a camera image and camera_info, but no depth stream; a wrist-camera model with
+  a measured extrinsic is M4.
 - **`jcheng-ops`** must not manage simulation processes as robot services.
+- **`jcheng-research`** may run its own experiments on domain 43; run one plant
+  at a time and check `ros2 node list` before starting a plant.
 
-## 9. Related
+## 10. Compatibility entry points
 
+`jcheng_simulation_bringup` and `jcheng_simulation_arm` are thin ament_cmake
+packages. Their launch files include the engine with a fixed robot id:
+
+| Old command | Now |
+|---|---|
+| `ros2 launch jcheng_simulation_bringup sim.launch.py backend:=mock` | engine `robot:=armpi_ultra` |
+| `ros2 launch jcheng_simulation_arm gazebo.launch.py` | engine `robot:=gate2_arm backend:=gz` |
+| `ros2 launch jcheng_simulation_arm display.launch.py` | engine `display.launch.py robot:=gate2_arm` |
+
+They contain no plant code or robot data and can be removed once external
+scripts and recorded commands no longer reference them.
+
+## 11. Related
+
+- [MULTI_ROBOT.md](MULTI_ROBOT.md)
 - [SIMULATION_MODEL.md](SIMULATION_MODEL.md)
 - [FAILURE_MODES.md](FAILURE_MODES.md)
 - [ADR 0001](adr/0001-simulation-domain-and-truth.md)
+- [ADR 0003](adr/0003-multi-robot-engine.md)
 - [Repository taxonomy](https://github.com/JCHENG-Robotics/.github/blob/main/docs/repo-taxonomy.md)

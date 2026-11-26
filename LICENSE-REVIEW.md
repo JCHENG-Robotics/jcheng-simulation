@@ -33,8 +33,10 @@ repository.
 - [ ] Confirm the ecosystem-wide license decision before v1.0.
 - [ ] Decide whether simulation assets that derive from vendor geometry need a
       separate notice when they are eventually added.
-- [ ] Decide whether a `THIRD_PARTY_NOTICES.md` is required for a published
-      simulation image.
+- [x] Decide whether a `THIRD_PARTY_NOTICES.md` is required for a published
+      simulation image. **Added 2026-11-26** for the MIT-derived Gate-2 code;
+      it does not add a root `LICENSE` and does not decide the repository's own
+      license.
 
 ## 4. Related
 

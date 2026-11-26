@@ -1,14 +1,15 @@
-"""Static boundary check: the simulation must not touch hardware.
+"""Static boundary check: no plant may touch hardware.
 
-The scan covers source, launch, config, URDF and world files. Documentation,
-tests and evidence are excluded because they quote the forbidden tokens.
+The scan covers every package under ``ros2_ws/src`` (engine, catalog data and
+the compatibility wrappers). Documentation, tests and evidence are excluded
+because they quote the forbidden tokens.
 """
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / "ros2_ws" / "src" / "jcheng_simulation_bringup"
-CONFIG = PACKAGE / "config"
+SOURCE = ROOT / "ros2_ws" / "src"
+ROBOTS = SOURCE / "jcheng_simulation_robots" / "robots"
 
 TEXT_SUFFIXES = {".py", ".yaml", ".yml", ".xml", ".xacro", ".sdf", ".sh", ".cfg", ".txt"}
 
@@ -36,10 +37,10 @@ FORBIDDEN_ASSETS = {".stl", ".STL", ".dae", ".obj", ".pt", ".onnx", ".engine"}
 
 
 def _scanned_files():
-    # scripts/check_repo_gate.sh carries the forbidden-token list itself, so it
-    # is excluded; the gate performs the same scan with its own patterns.
-    for path in sorted(PACKAGE.rglob("*")):
+    for path in sorted(SOURCE.rglob("*")):
         if path.is_file() and path.suffix in TEXT_SUFFIXES:
+            if "__pycache__" in path.parts:
+                continue
             yield path
 
 
@@ -69,10 +70,11 @@ def test_no_license_file_while_the_review_is_open():
     assert (ROOT / "LICENSE-REVIEW.md").exists()
 
 
-def test_package_uses_primitive_geometry_only():
-    urdf = (PACKAGE / "urdf" / "jcheng_armpi_sim.urdf.xacro").read_text(
-        encoding="utf-8"
-    )
-    assert "<mesh" not in urdf
-    assert "package://" not in urdf
-    assert "file://" not in urdf
+def test_catalog_urdfs_use_primitive_geometry_only():
+    urdfs = sorted(ROBOTS.glob("*/urdf/*.xacro")) + sorted(ROBOTS.glob("*/urdf/*.urdf"))
+    assert urdfs
+    for urdf_path in urdfs:
+        text = urdf_path.read_text(encoding="utf-8")
+        assert "<mesh" not in text, urdf_path
+        assert "package://" not in text, urdf_path
+        assert "file://" not in text, urdf_path

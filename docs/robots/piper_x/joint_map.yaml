@@ -1,0 +1,192 @@
+# Piper X joint map — reference data, not a plant
+
+# Schema: `jcheng.piper_x_joint_map.v1`. Generated 2026-11-26.
+# Source of truth: `agilexrobotics/agx_arm_urdf@680fa925cd00db7e2628563d2edc5540963045de`
+# (`piper_x/urdf/piper_x_description.urdf` and
+# `piper_x/urdf/piper_x_with_gripper_description.xacro`, MIT).
+# This file is **not loaded** by `jcheng_simulation_bringup`; it exists so a future
+# Piper X plant, contract or test can be generated from one checked-in table.
+
+schema: jcheng.piper_x_joint_map.v1
+generated: "2026-11-26"
+units: SI
+frame_convention: REP-103
+source:
+  repo: https://github.com/agilexrobotics/agx_arm_urdf
+  commit: 680fa925cd00db7e2628563d2edc5540963045de
+  license: MIT
+  urdf: piper_x/urdf/piper_x_description.urdf
+  urdf_sha256: "93eb2a84d01df81566a3c1ed275626d93a1c4275564a30c7899a35a672e265bb"
+  gripper_xacro: piper_x/urdf/piper_x_with_gripper_description.xacro
+  gripper_xacro_sha256: "88561fe45a3f4e639c7a233b13574d88d7707b545110cb30b983e360cdb57420"
+
+declared_masses_kg:
+  base_link: 1.02
+  link1: 0.71
+  link2: 1.16
+  link3: 0.67
+  link4: 0.39
+  link5: 0.35
+  link6: 0.01655408133
+  note: "URDF declarations, not weighed; sum 4.31655408133 kg, close to the 4.5 kg class specification."
+
+joints:
+  - name: world_to_base_link
+    type: fixed
+    parent: world
+    child: base_link
+    origin_xyz_m: [0.0, 0.0, 0.0]
+    origin_rpy_rad: [0.0, 0.0, 0.0]
+  - name: joint1
+    type: revolute
+    parent: base_link
+    child: link1
+    origin_xyz_m: [0.0, 0.0, 0.123]
+    origin_rpy_rad: [0.0, 0.0, 3.1415926]
+    axis: [0.0, 0.0, 1.0]
+    lower_rad: -2.6179938
+    upper_rad: 2.6179938
+    velocity_rad_s: 5.0
+    effort_nm: 100.0
+  - name: joint2
+    type: revolute
+    parent: link1
+    child: link2
+    origin_xyz_m: [0.0, 0.0, 0.0]
+    origin_rpy_rad: [-1.5707963, -3.005806, -3.1415926]
+    axis: [0.0, 0.0, 1.0]
+    lower_rad: 0.0
+    upper_rad: 3.1415926
+    velocity_rad_s: 5.0
+    effort_nm: 100.0
+  - name: joint3
+    type: revolute
+    parent: link2
+    child: link3
+    origin_xyz_m: [0.28503, 0.0, 0.0]
+    origin_rpy_rad: [0.0, 0.0, 2.8380798]
+    axis: [0.0, 0.0, 1.0]
+    lower_rad: -2.9670597
+    upper_rad: 0.0
+    velocity_rad_s: 5.0
+    effort_nm: 100.0
+  - name: joint4
+    type: revolute
+    parent: link3
+    child: link4
+    origin_xyz_m: [0.27364, 0.0, 0.0]
+    origin_rpy_rad: [0.0, 0.0, 0.0806342]
+    axis: [0.0, 0.0, 1.0]
+    lower_rad: -1.553343
+    upper_rad: 1.553343
+    velocity_rad_s: 5.0
+    effort_nm: 100.0
+  - name: joint5
+    type: revolute
+    parent: link4
+    child: link5
+    origin_xyz_m: [0.07466, 0.0, 0.0]
+    origin_rpy_rad: [-1.5707963, 1.5707963, 0.0]
+    axis: [0.0, 0.0, 1.0]
+    lower_rad: -1.553343
+    upper_rad: 1.553343
+    velocity_rad_s: 5.0
+    effort_nm: 100.0
+  - name: joint6
+    type: revolute
+    parent: link5
+    child: link6
+    origin_xyz_m: [0.0, -0.035, 0.0]
+    origin_rpy_rad: [1.5707963, 0.0, 0.0]
+    axis: [0.0, 0.0, 1.0]
+    lower_rad: -2.9670597
+    upper_rad: 2.9670597
+    velocity_rad_s: 5.0
+    effort_nm: 100.0
+
+end_effector:
+  flange:
+    name: flange_joint
+    type: fixed
+    parent: link6
+    child: flange_link
+    origin_xyz_m: [0.0, 0.0, 0.0]
+    origin_rpy_rad: [0.0, 0.0, 0.0]
+  gripper_base:
+    name: gripper_base_joint
+    type: fixed
+    parent: flange_link
+    child: gripper_base
+    origin_xyz_m: [0.0, 0.0, 0.0045]
+    origin_rpy_rad: [0.0, 0.0, 1.5707963]
+  master:
+    name: gripper
+    type: prismatic
+    parent: gripper_base
+    child: gripper_link
+    origin_xyz_m: [0.0, 0.0, 0.0]
+    origin_rpy_rad: [0.0, 0.0, 0.0]
+    axis: [1.0, 0.0, 0.0]
+    lower_m: 0.0
+    upper_m: 0.1
+    velocity_m_s: 3.0
+    effort_n: 10.0
+    note: "Master joint used by MoveIt and the controller; axis is the URDF default because the xacro omits <axis>."
+  mimic:
+    - name: gripper_joint1
+      type: prismatic
+      parent: gripper_base
+      child: gripper_link1
+      origin_xyz_m: [0.0, 0.0, 0.138]
+      origin_rpy_rad: [1.5707963, 0.0, 0.0]
+      axis: [1.0, 0.0, 0.0]
+      lower_m: 0.0
+      upper_m: 0.05
+      velocity_m_s: 3.0
+      effort_n: 10.0
+      mimic: {joint: gripper, multiplier: 0.5, offset: 0.0}
+    - name: gripper_joint2
+      type: prismatic
+      parent: gripper_base
+      child: gripper_link2
+      origin_xyz_m: [0.0, 0.0, 0.138]
+      origin_rpy_rad: [1.5707963, 0.0, -3.1415926]
+      axis: [1.0, 0.0, 0.0]
+      lower_m: -0.05
+      upper_m: 0.0
+      velocity_m_s: 3.0
+      effort_n: 10.0
+      mimic: {joint: gripper, multiplier: -0.5, offset: 0.0}
+
+tcp:
+  link: tcp_link
+  parent: link6
+  joint: tcp_joint
+  offset_xyz_m: [0.0, 0.0, 0.0]
+  offset_rpy_rad: [0.0, 0.0, 0.0]
+  status: unmeasured
+  note: >
+    agx_arm.urdf.xacro defaults tcp_offset_xyz/rpy to zero. The 0.1425 m value in
+    agx_arm_ros/docs/tcp_offset is an example for the standard Piper with gripper,
+    not a Piper X measurement. Measure link6 -> gripper fingertip before grasping.
+
+cross_checks:
+  pyagxarm:
+    commit: d90e234ba8e408cfa964b38aa9120b3131fc9f85
+    source: pyAgxArm/api/constants.py
+    joint_limits: "ROBOT_JOINT_LIMIT_PRESET_RAD['piper_x'] matches joints.joint1..joint6 above"
+    mdh_preset:
+      convention: "MDH (d, a, alpha, theta_offset), metres and radians"
+      rows:
+        - [0.123, 0.0, 0.0, 3.141592653589793]
+        - [0.0, 0.0, 1.5707963267948966, 0.13578661580515886]
+        - [0.0, 0.28502999999999995, 0.0, 2.8380798966679794]
+        - [0.0, 0.27364, 0.0, 0.08063421144213803]
+        - [0.0, 0.07465999999999999, -1.5707963267948966, 1.5707963267948966]
+        - [0.03526, 0.0, 1.5707963267948966, 0.0]
+
+safety_notes:
+  - "URDF effort=100 and velocity=5 are declarations, not measured limits; do not use them as a safety envelope."
+  - "The public Piper X specification lists J6 +/-165 deg (2.880 rad); the MIT URDF and pyAgxArm's ROBOT_JOINT_LIMIT_PRESET_RAD['piper_x'] both list +/-170 deg (2.967 rad). Until firmware and a bus read confirm the limit, prefer the conservative 2.880 rad in a soft limit."
+  - "The URDF root is `world` through a fixed `world_to_base_link`; a plant that expects base_link at the origin must flatten or re-root it explicitly."
+  - "This table describes the 6-revolute + master-gripper model. It is not the 8-joint model in piper_isaac_sim and must not be mixed with it."

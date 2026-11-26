@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<!--
+  Gazebo wrapper for the external Piper X description (MIT, pinned in
+  docs/robots/piper_x/SOURCES.yaml).
+
+  The upstream description is a pure URDF/xacro: meshes, links, joints and
+  inertias, but no ros2_control block and no Gazebo plugin. This wrapper adds
+  only those two things for the simulation plant; it does not redefine the
+  model. It requires:
+
+    * JCHENG_ASSET_ROOT pointing at the materialised bundle, and
+    * the profile's asset_prefix on AMENT_PREFIX_PATH so the upstream
+      $(find agx_arm_description) include and the package URIs in the upstream
+      meshes resolve.
+
+  The command bounds for joint6 are the conservative 2.880 rad soft limit from
+  the profile, not the upstream 2.967 rad; see docs/robots/piper_x/README.md.
+  Mimic joints (gripper_joint1/2) are left to Gazebo/URDF; only the master
+  `gripper` joint is commanded.
+-->
+<robot name="piper_x" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:arg name="controller_config"
+             default="$(find jcheng_simulation_robots)/robots/piper_x/config/controllers.yaml"/>
+
+  <xacro:include filename="$(env JCHENG_ASSET_ROOT)/piper_x/agx_arm_urdf-680fa925/piper_x/urdf/piper_x_with_gripper_description.xacro"/>
+
+  <ros2_control name="PiperXGazebo" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+
+    <joint name="joint1">
+      <command_interface name="position">
+        <param name="min">-2.6179938</param>
+        <param name="max">2.6179938</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint2">
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">3.1415926</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint3">
+      <command_interface name="position">
+        <param name="min">-2.9670597</param>
+        <param name="max">0.0</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint4">
+      <command_interface name="position">
+        <param name="min">-1.553343</param>
+        <param name="max">1.553343</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint5">
+      <command_interface name="position">
+        <param name="min">-1.553343</param>
+        <param name="max">1.553343</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint6">
+      <command_interface name="position">
+        <param name="min">-2.880</param>
+        <param name="max">2.880</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="gripper">
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">0.1</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <gazebo>
+    <plugin filename="libgz_ros2_control-system.so"
+            name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <ros>
+        <namespace>/sim</namespace>
+        <remapping>robot_description:=/robot_description</remapping>
+      </ros>
+      <parameters>$(arg controller_config)</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>

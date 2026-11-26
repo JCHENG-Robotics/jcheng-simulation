@@ -1,0 +1,93 @@
+# ArmPi Ultra — primitive-geometry simulation profile.
+#
+# The single source of truth for this device in the catalog: command joints,
+# limits, controllers, sensor topics, world and mock behaviour. See
+# docs/MULTI_ROBOT.md for the schema.
+schema: jcheng.simulation_robot.v1
+id: armpi_ultra
+version: "0.1.0"
+description: >
+  Primitive 5-DoF ArmPi Ultra stand-in with one gripper finger, a 2D LiDAR and
+  a wrist camera. Position limits are the vendor servo EEPROM bounds minus the
+  20-pulse margin adopted in the frozen baseline (2026-11-18). The geometry is
+  simplified and is not a measured replica.
+
+model:
+  name: jcheng_armpi_sim
+  urdf: urdf/jcheng_armpi_sim.urdf.xacro
+  controller_arg: controllers_yaml
+  spawn: {x: 0.0, y: 0.0, z: 0.0, yaw: 0.0}
+
+joints:
+  - {name: joint1,  type: revolute, lower: -1.8012, upper: 1.8012, velocity: 1.5, effort: 10.0}
+  - {name: joint2,  type: revolute, lower: -0.6618, upper: 1.1519, velocity: 1.5, effort: 10.0}
+  - {name: joint3,  type: revolute, lower: -1.8012, upper: 0.0,    velocity: 1.5, effort: 10.0}
+  - {name: joint4,  type: revolute, lower: -1.5917, upper: 1.5917, velocity: 1.5, effort: 10.0}
+  - {name: joint5,  type: revolute, lower: -1.5917, upper: 1.5499, velocity: 1.5, effort: 10.0}
+  - {name: r_joint, type: revolute, lower: -2.22,   upper: 0.0,    velocity: 1.5, effort: 10.0}
+
+controllers:
+  manager: /sim/controller_manager
+  update_rate: 100
+  config: config/controllers.yaml
+  startup_order: [joint_state_broadcaster, arm_controller, gripper_controller]
+  startup_timeout_s: 60.0
+  items:
+    - name: joint_state_broadcaster
+      kind: broadcaster
+      type: joint_state_broadcaster/JointStateBroadcaster
+    - name: arm_controller
+      kind: trajectory
+      type: joint_trajectory_controller/JointTrajectoryController
+      joints: [joint1, joint2, joint3, joint4, joint5]
+      command_interfaces: [position]
+      state_interfaces: [position, velocity]
+    - name: gripper_controller
+      kind: trajectory
+      type: joint_trajectory_controller/JointTrajectoryController
+      joints: [r_joint]
+      command_interfaces: [position]
+      state_interfaces: [position, velocity]
+
+sensors:
+  - {name: lidar, kind: lidar, ros_topic: /sim/scan, frame: laser_link, rate_hz: 10}
+  - name: camera
+    kind: camera
+    ros_topic: /sim/camera/image
+    camera_info_topic: /sim/camera/camera_info
+    frame: camera_optical_frame
+    rate_hz: 10
+
+bridge:
+  config: config/ros_gz_bridge.yaml
+
+world: worlds/jcheng_lab.sdf
+
+mock:
+  rate_hz: 50
+  time_constant_s: 0.08
+  command_timeout_ms: 500
+  initial: {r_joint: -0.4}
+  scan:
+    topic: /sim/scan
+    frame: laser_link
+    rate_hz: 10
+    beam_count: 360
+    max_range_m: 8.0
+    range_min_m: 0.05
+    angle_min_rad: -3.141592653589793
+    angle_max_rad: 3.141592653589793
+    room:
+      width_m: 4.0
+      depth_m: 3.0
+      obstacle_x_m: 0.8
+      obstacle_y_m: 0.0
+      obstacle_radius_m: 0.15
+
+topics:
+  joint_command: /sim/joint_command
+  joint_states: /sim/joint_states
+
+truth:
+  topic: /sim/truth/source
+  label: simulated
