@@ -1,0 +1,46 @@
+# ros2_control controllers loaded by gz_ros2_control inside Gazebo.
+#
+# The plugin places the controller_manager and the controller nodes in the
+# /sim namespace (see the <ros> block in urdf/jcheng_armpi_sim.urdf.xacro).
+# ROS 2 parameter files match fully qualified node names, so the top-level
+# keys below are namespace-qualified. Action surfaces:
+#   /sim/arm_controller/follow_joint_trajectory
+#   /sim/gripper_controller/follow_joint_trajectory
+#   /sim/joint_states
+/sim/controller_manager:
+  ros__parameters:
+    update_rate: 100
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+/sim/arm_controller:
+  ros__parameters:
+    joints:
+      - joint1
+      - joint2
+      - joint3
+      - joint4
+      - joint5
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    allow_partial_joints_goal: false
+    open_loop_control: false
+
+/sim/gripper_controller:
+  ros__parameters:
+    joints:
+      - r_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    allow_partial_joints_goal: false
+    open_loop_control: false

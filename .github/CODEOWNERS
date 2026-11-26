@@ -1,0 +1,10 @@
+# Copy of the organization CODEOWNERS template, adjusted for this repository.
+# GitHub does not apply CODEOWNERS from the .github repository to other repos.
+
+* @JerichoCheng
+
+/docs/            @JerichoCheng
+/.github/         @JerichoCheng
+/ros2_ws/src/*/config/  @JerichoCheng
+/ros2_ws/src/*/urdf/    @JerichoCheng
+/ros2_ws/src/*/worlds/  @JerichoCheng
