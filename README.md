@@ -29,10 +29,11 @@ world during development and CI. It never opens a device, never joins domains
 | Motion authority | None on real hardware. The plant only simulates; it is never a `motion_source` for `jcheng-system`. |
 | Forbidden | Domains 0/41/42, vendor topics, device access, real motion, vendor meshes, model weights. |
 
-Every ROS topic the plant publishes is either `/clock` or under `/sim/`.
-`/sim/truth/source` carries the literal `simulated`; anything read from this
-repository is **simulated truth**, not a measurement. Mock and Gazebo results
-are never reported as hardware validation.
+Every plant **data** topic is either `/clock` or under `/sim/`; the standard ROS
+topics `/tf`, `/tf_static`, `/rosout`, `/parameter_events` and
+`/robot_description` also exist. `/sim/truth/source` carries the literal
+`simulated`; anything read from this repository is **simulated truth**, not a
+measurement. Mock and Gazebo results are never reported as hardware validation.
 
 ### Manifest note
 

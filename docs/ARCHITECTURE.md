@@ -34,7 +34,7 @@ gives the plant its own version, gate and evidence.
 |---|---|
 | ROS domain | The launch sets `ROS_DOMAIN_ID` to the `domain_id` argument. `_validate_domain()` raises if the value is not `43`; no node is started. |
 | Gazebo transport | The launch sets `GZ_PARTITION=jcheng-sim`, so a robot's Gazebo process on the same host cannot collide. |
-| ROS namespace | Every ROS topic is `/clock` or starts with `/sim/`. |
+| ROS namespace | Every plant **data** topic is `/clock` or starts with `/sim/`; standard ROS topics (`/tf`, `/tf_static`, `/rosout`, `/parameter_events`, `/robot_description`) also exist. |
 | Vendor topics | No `/ros_robot_controller/*`, `/joint_states` (vendor name) or other vendor topic is published. |
 
 Domain isolation is an **environment and naming** control, not a security
@@ -45,7 +45,7 @@ that mistakenly joins 43 would see only simulated data, but the reverse
 
 ## 3. Truth model
 
-- The `/sim/` prefix is mandatory for plant ROS topics.
+- The `/sim/` prefix is mandatory for plant data topics.
 - `/sim/truth/source` is a transient-local `std_msgs/String` with the value
   `simulated`.
 - `/sim/joint_states` is plant state. It resembles a measurement, but it is

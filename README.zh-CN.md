@@ -25,7 +25,8 @@ Gazebo Harmonic 的 ArmPi Ultra 简化模型 bringup，两者都限制在 ROS �
 | 运动授权 | 对真实硬件无。植物只做仿真，绝不是 `jcheng-system` 的 `motion_source`。 |
 | 禁止 | 域 0/41/42、厂商话题、设备访问、真实运动、厂商网格、模型权重。 |
 
-植物发布的每个 ROS 话题都是 `/clock` 或位于 `/sim/` 下。
+植物的每个**数据**话题都是 `/clock` 或位于 `/sim/` 下；标准 ROS 话题 `/tf`、
+`/tf_static`、`/rosout`、`/parameter_events` 与 `/robot_description` 也会存在。
 `/sim/truth/source` 携带字面量 `simulated`；从本仓库读到的一切都是**仿真真值**，
 不是测量值。mock 与 Gazebo 结果从不作为硬件验证报告。
 
