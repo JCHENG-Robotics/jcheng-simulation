@@ -1,6 +1,6 @@
 # jcheng-simulation
 
-[English](README.md) | **简体中文**
+**简体中文** | [English](README.md)
 
 JCHENG 生态的离线仿真被控对象。它是一个**多机器人引擎**：一套实现、一个设备目录、两种后端。
 每个设备由 `robots/<id>/robot.yaml` 描述；`robot.launch.py robot:=<id>` 依据 profile 构建
@@ -11,7 +11,7 @@ JCHENG 生态的离线仿真被控对象。它是一个**多机器人引擎**：
 > Jazzy/Harmonic 上通过离线运行，但这里没有任何硬件验证：几何是简化的临时模型，没有第二个
 > 夹爪手指、深度流或移动底盘。目录中已有两个机器人；新增设备只需一个目录加一份 profile ——
 > 见 [docs/MULTI_ROBOT.md](docs/MULTI_ROBOT.md)。
-> 本文为英文主文档的中文对照；如有歧义，以 [README.md](README.md) 为准。
+> 本文为英文主文档的中文对照；如有歧义，以英文版为准。
 
 ## 范围与边界
 
