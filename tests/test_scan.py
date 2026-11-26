@@ -1,18 +1,17 @@
 """Geometry tests for the synthetic scan model."""
 
 import math
+from pathlib import Path
 
 import pytest
 
-from jcheng_simulation_bringup.scan import RoomModel, scan_ranges
+from jcheng_simulation_robots.profile import load_catalog
+from jcheng_simulation_robots.scan import RoomModel, scan_ranges
 
-ROOM = RoomModel(
-    width_m=4.0,
-    depth_m=3.0,
-    obstacle_x_m=0.8,
-    obstacle_y_m=0.0,
-    obstacle_radius_m=0.15,
-)
+ROOT = Path(__file__).resolve().parents[1]
+PROFILES = load_catalog(ROOT / "ros2_ws" / "src" / "jcheng_simulation_robots" / "robots")
+SCAN = PROFILES["armpi_ultra"].mock.scan
+ROOM = RoomModel.from_mapping(dict(SCAN.room))
 
 
 def test_forward_ray_hits_the_obstacle():
@@ -29,7 +28,7 @@ def test_range_is_capped():
 
 
 def test_scan_has_the_requested_beam_count_and_bounds():
-    ranges = scan_ranges(ROOM, 360, 8.0)
+    ranges = scan_ranges(ROOM, SCAN.beam_count, SCAN.max_range_m, angle_min_rad=SCAN.angle_min_rad, angle_max_rad=SCAN.angle_max_rad)
     assert len(ranges) == 360
     assert all(0.0 < value <= 8.0 for value in ranges)
     assert ranges[0] == pytest.approx(2.0, abs=1e-6)

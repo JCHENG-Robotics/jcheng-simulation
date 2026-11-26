@@ -30,6 +30,16 @@ class RoomModel:
         if abs(self.obstacle_y_m) + self.obstacle_radius_m >= self.depth_m / 2.0:
             raise ValueError("obstacle must be fully inside the room in y")
 
+    @classmethod
+    def from_mapping(cls, room: dict) -> "RoomModel":
+        return cls(
+            width_m=float(room["width_m"]),
+            depth_m=float(room["depth_m"]),
+            obstacle_x_m=float(room["obstacle_x_m"]),
+            obstacle_y_m=float(room["obstacle_y_m"]),
+            obstacle_radius_m=float(room["obstacle_radius_m"]),
+        )
+
     def ray(self, angle_rad: float, max_range_m: float) -> float:
         """Return the nearest hit distance for a ray from the origin."""
 
@@ -80,6 +90,8 @@ def scan_ranges(
 
     if beam_count < 2:
         raise ValueError("beam_count must be >= 2")
+    if not angle_min_rad < angle_max_rad:
+        raise ValueError("angle_min_rad must be < angle_max_rad")
     step = (angle_max_rad - angle_min_rad) / beam_count
     return [
         room.ray(angle_min_rad + index * step, max_range_m)

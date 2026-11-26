@@ -18,7 +18,7 @@
 -->
 <robot name="jcheng_armpi_sim" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:arg name="controllers_yaml" default="$(find jcheng_simulation_bringup)/config/controllers.yaml"/>
+  <xacro:arg name="controllers_yaml" default="$(find jcheng_simulation_robots)/robots/armpi_ultra/config/controllers.yaml"/>
 
   <xacro:macro name="cylinder_inertial" params="mass radius length">
     <inertial>

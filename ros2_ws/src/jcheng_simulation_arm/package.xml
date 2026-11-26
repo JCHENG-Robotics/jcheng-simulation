@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>jcheng_simulation_arm</name>
+  <version>0.1.0</version>
+  <description>
+    Deprecated compatibility entry point for the migrated Gate-2 2-DoF arm
+    plant. The implementation moved to jcheng_simulation_robots
+    (robots/gate2_arm).
+  </description>
+  <maintainer email="chengkewei77@gmail.com">JerichoCheng</maintainer>
+  <license>Proprietary (license review pending; no LICENSE file)</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>jcheng_simulation_robots</exec_depend>
+  <exec_depend>launch</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

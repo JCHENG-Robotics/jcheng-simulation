@@ -1,0 +1,81 @@
+# Piper X — 6-DoF arm with a parallel gripper.
+#
+# The authoritative model is the MIT upstream description
+# (agilexrobotics/agx_arm_urdf@680fa925, see docs/robots/piper_x/). It is kept
+# outside git; this profile points at the in-tree Gazebo wrapper that includes
+# it and adds the ros2_control block. Joint data is transcribed from
+# docs/robots/piper_x/joint_map.yaml, with joint6 on the conservative 2.880 rad
+# soft limit until firmware/bus reads confirm 2.967 rad.
+#
+# Without the asset bundle (JCHENG_ASSET_ROOT + the agx_arm_description prefix)
+# this profile is still catalogued and its controllers are validated, but the
+# plant refuses to launch. See docs/MULTI_ROBOT.md §6.
+schema: jcheng.simulation_robot.v1
+id: piper_x
+version: "0.1.0"
+description: >
+  Piper X (Agilex) 6-DoF arm with a parallel gripper, described by the pinned
+  MIT upstream URDF kept outside git. This is a simulation plant, not a
+  hardware-validated model; the gripper fingers are mimic joints and only the
+  master gripper joint is commanded.
+
+model:
+  name: piper_x
+  urdf: urdf/piper_x_gz.urdf.xacro
+  requires_env: [JCHENG_ASSET_ROOT]
+  asset_prefix: ${JCHENG_ASSET_ROOT}/piper_x/prefix
+  joint_damping: 1.0
+  controller_arg: controller_config
+  spawn: {x: 0.0, y: 0.0, z: 0.0, yaw: 0.0}
+
+joints:
+  - {name: joint1,  type: revolute,  lower: -2.6179938, upper: 2.6179938, velocity: 1.5, effort: 100.0}
+  - {name: joint2,  type: revolute,  lower: 0.0,        upper: 3.1415926, velocity: 1.5, effort: 100.0}
+  - {name: joint3,  type: revolute,  lower: -2.9670597, upper: 0.0,       velocity: 1.5, effort: 100.0}
+  - {name: joint4,  type: revolute,  lower: -1.553343,  upper: 1.553343,  velocity: 1.5, effort: 100.0}
+  - {name: joint5,  type: revolute,  lower: -1.553343,  upper: 1.553343,  velocity: 1.5, effort: 100.0}
+  - {name: joint6,  type: revolute,  lower: -2.88,      upper: 2.88,      velocity: 1.5, effort: 100.0}
+  - {name: gripper, type: prismatic, lower: 0.0,        upper: 0.1,       velocity: 0.05, effort: 10.0}
+
+controllers:
+  manager: /sim/controller_manager
+  update_rate: 100
+  config: config/controllers.yaml
+  gain_node: /sim/gz_ros_control
+  default_gain: 10.0
+  startup_order: [joint_state_broadcaster, arm_controller, gripper_controller]
+  startup_timeout_s: 60.0
+  items:
+    - name: joint_state_broadcaster
+      kind: broadcaster
+      type: joint_state_broadcaster/JointStateBroadcaster
+    - name: arm_controller
+      kind: trajectory
+      type: joint_trajectory_controller/JointTrajectoryController
+      joints: [joint1, joint2, joint3, joint4, joint5, joint6]
+      command_interfaces: [position]
+      state_interfaces: [position, velocity]
+    - name: gripper_controller
+      kind: trajectory
+      type: joint_trajectory_controller/JointTrajectoryController
+      joints: [gripper]
+      command_interfaces: [position]
+      state_interfaces: [position, velocity]
+
+sensors: []
+
+world: worlds/piper_x_lab.sdf
+
+mock:
+  rate_hz: 50
+  time_constant_s: 0.08
+  command_timeout_ms: 500
+  initial: {}
+
+topics:
+  joint_command: /sim/joint_command
+  joint_states: /sim/joint_states
+
+truth:
+  topic: /sim/truth/source
+  label: simulated

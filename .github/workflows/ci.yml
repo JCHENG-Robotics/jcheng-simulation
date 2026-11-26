@@ -55,51 +55,72 @@ jobs:
           apt-get install -y --no-install-recommends \
             python3-colcon-common-extensions \
             python3-yaml \
+            ros-jazzy-ament-cmake-pytest \
             ros-jazzy-xacro \
             ros-jazzy-robot-state-publisher \
             ros-jazzy-ros-gz \
             ros-jazzy-gz-ros2-control \
             ros-jazzy-joint-state-broadcaster \
             ros-jazzy-joint-trajectory-controller
-      - name: Build package
+      - name: Build packages
         shell: bash
         run: |
           source /opt/ros/jazzy/setup.bash
           colcon build \
             --base-paths ros2_ws/src \
-            --packages-select jcheng_simulation_bringup \
+            --packages-select jcheng_simulation_robots \
+                             jcheng_simulation_bringup \
+                             jcheng_simulation_arm \
             --event-handlers console_cohesion+
-      - name: Expand the URDF
+      - name: Engine package tests
         shell: bash
         run: |
           source /opt/ros/jazzy/setup.bash
-          xacro ros2_ws/src/jcheng_simulation_bringup/urdf/jcheng_armpi_sim.urdf.xacro \
-            controllers_yaml:="$PWD/ros2_ws/src/jcheng_simulation_bringup/config/controllers.yaml" \
+          python3 -m pytest -q ros2_ws/src/jcheng_simulation_robots/test
+      - name: Expand the catalog URDFs
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          ROBOTS=ros2_ws/src/jcheng_simulation_robots/robots
+          xacro "$ROBOTS/armpi_ultra/urdf/jcheng_armpi_sim.urdf.xacro" \
+            controllers_yaml:="$PWD/$ROBOTS/armpi_ultra/config/controllers.yaml" \
             > /tmp/jcheng_armpi_sim.urdf
-          test -s /tmp/jcheng_armpi_sim.urdf
+          xacro "$ROBOTS/gate2_arm/urdf/simple_arm.xacro" \
+            controller_config:="$PWD/$ROBOTS/gate2_arm/config/arm_controllers.yaml" \
+            > /tmp/jcheng_sim_arm.urdf
+          for f in /tmp/jcheng_armpi_sim.urdf /tmp/jcheng_sim_arm.urdf; do
+            test -s "$f"
+          done
       - name: Validate robot and world SDF
         shell: bash
         run: |
           source /opt/ros/jazzy/setup.bash
+          ROBOTS=ros2_ws/src/jcheng_simulation_robots/robots
           gz sdf -p /tmp/jcheng_armpi_sim.urdf > /tmp/jcheng_armpi_sim.sdf
-          gz sdf -p ros2_ws/src/jcheng_simulation_bringup/worlds/jcheng_lab.sdf \
-            > /tmp/jcheng_lab.sdf
-          test -s /tmp/jcheng_armpi_sim.sdf
-          test -s /tmp/jcheng_lab.sdf
-      - name: Launch description
+          gz sdf -p "$ROBOTS/armpi_ultra/worlds/jcheng_lab.sdf" > /tmp/jcheng_lab.sdf
+          gz sdf -p /tmp/jcheng_sim_arm.urdf > /tmp/jcheng_sim_arm.sdf
+          gz sdf -p "$ROBOTS/gate2_arm/worlds/arm_lab.sdf" > /tmp/jcheng_arm_lab.sdf
+          for f in /tmp/jcheng_armpi_sim.sdf /tmp/jcheng_lab.sdf \
+                   /tmp/jcheng_sim_arm.sdf /tmp/jcheng_arm_lab.sdf; do
+            test -s "$f"
+          done
+      - name: Launch descriptions
         shell: bash
         run: |
           source /opt/ros/jazzy/setup.bash
           source install/setup.bash
+          ros2 launch jcheng_simulation_robots robot.launch.py --show-args
+          ros2 launch jcheng_simulation_robots display.launch.py --show-args
           ros2 launch jcheng_simulation_bringup sim.launch.py --show-args
-      - name: Mock backend smoke
+          ros2 launch jcheng_simulation_arm gazebo.launch.py --show-args
+      - name: Mock backend smoke (armpi_ultra)
         shell: bash
         run: |
           source /opt/ros/jazzy/setup.bash
           source install/setup.bash
           export ROS_DOMAIN_ID=43
-          ros2 launch jcheng_simulation_bringup sim.launch.py backend:=mock \
-            > /tmp/mock.log 2>&1 &
+          ros2 launch jcheng_simulation_robots robot.launch.py \
+            robot:=armpi_ultra backend:=mock > /tmp/mock.log 2>&1 &
           PID=$!
           ready=0
           for i in $(seq 1 30); do

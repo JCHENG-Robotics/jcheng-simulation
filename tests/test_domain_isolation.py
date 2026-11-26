@@ -1,29 +1,52 @@
-"""Domain-isolation checks: simulation is confined to domain 43."""
+"""Domain-isolation checks: every plant is confined to domain 43."""
 
 from pathlib import Path
 import re
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / "ros2_ws" / "src" / "jcheng_simulation_bringup"
-CONFIG = PACKAGE / "config"
-LAUNCH = PACKAGE / "launch" / "sim.launch.py"
+SRC = ROOT / "ros2_ws" / "src"
+ENGINE = SRC / "jcheng_simulation_robots" / "launch" / "robot.launch.py"
+DISPLAY = SRC / "jcheng_simulation_robots" / "launch" / "display.launch.py"
+BRINGUP = SRC / "jcheng_simulation_bringup" / "launch" / "sim.launch.py"
+ARM_GAZEBO = SRC / "jcheng_simulation_arm" / "launch" / "gazebo.launch.py"
+ARM_DISPLAY = SRC / "jcheng_simulation_arm" / "launch" / "display.launch.py"
+ENGINE_LAUNCHES = (ENGINE, DISPLAY)
+WRAPPERS = {
+    BRINGUP: "armpi_ultra",
+    ARM_GAZEBO: "gate2_arm",
+    ARM_DISPLAY: "gate2_arm",
+}
 
 
-def test_config_declares_domain_43():
-    config = yaml.safe_load((CONFIG / "sim.yaml").read_text(encoding="utf-8"))
-    assert config["domain_id"] == 43
-    assert config["truth"]["label"] == "simulated"
-    assert config["truth"]["topic"] == "/sim/truth/source"
-
-
-def test_launch_rejects_any_other_domain():
-    source = LAUNCH.read_text(encoding="utf-8")
+@pytest.mark.parametrize("launch", ENGINE_LAUNCHES, ids=lambda path: path.name)
+def test_engine_launch_rejects_any_other_domain(launch):
+    source = launch.read_text(encoding="utf-8")
     assert "ROS_DOMAIN_ID" in source
     assert '!= "43"' in source
     assert "RuntimeError" in source
     assert 'default_value="43"' in source
+
+
+def test_engine_partitions_gazebo_transport():
+    source = ENGINE.read_text(encoding="utf-8")
+    assert "GZ_PARTITION" in source
+    assert "jcheng-sim" in source
+
+
+@pytest.mark.parametrize(
+    "launch,robot_id",
+    sorted(WRAPPERS.items()),
+    ids=[path.name for path in sorted(WRAPPERS)],
+)
+def test_compatibility_wrappers_pin_their_robot(launch, robot_id):
+    source = launch.read_text(encoding="utf-8")
+    assert robot_id in source
+    assert "jcheng_simulation_robots" in source
+    assert "SetEnvironmentVariable" not in source
+    assert "ROS_DOMAIN_ID" not in source
 
 
 def test_no_source_assigns_a_robot_domain():
@@ -43,20 +66,14 @@ def test_no_source_assigns_a_robot_domain():
     assert not problems, "robot-domain assignment found:\n" + "\n".join(problems)
 
 
-def test_gazebo_transport_is_partitioned():
-    source = LAUNCH.read_text(encoding="utf-8")
-    assert 'GZ_PARTITION' in source
-    assert 'jcheng-sim' in source
-
-
-def test_bridge_keeps_ros_topics_under_sim():
-    bridge = yaml.safe_load(
-        (CONFIG / "ros_gz_bridge.yaml").read_text(encoding="utf-8")
-    )
-    for entry in bridge:
-        ros_topic = entry["ros_topic_name"]
-        assert ros_topic == "/clock" or ros_topic.startswith("/sim/"), ros_topic
-        assert not ros_topic.startswith("/ros_robot_controller"), ros_topic
+def test_bridge_overrides_keep_ros_topics_under_sim():
+    bridges = sorted((SRC / "jcheng_simulation_robots" / "robots").glob("*/config/*bridge*.yaml"))
+    assert bridges
+    for path in bridges:
+        for entry in yaml.safe_load(path.read_text(encoding="utf-8")):
+            ros_topic = entry["ros_topic_name"]
+            assert ros_topic == "/clock" or ros_topic.startswith("/sim/"), ros_topic
+            assert not ros_topic.startswith("/ros_robot_controller"), ros_topic
 
 
 def test_manifest_domain_is_only_43():

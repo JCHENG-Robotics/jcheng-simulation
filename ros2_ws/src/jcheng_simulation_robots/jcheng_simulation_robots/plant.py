@@ -1,20 +1,15 @@
 """Deterministic joint plant used by the mock backend.
 
-This module is ROS-free so the core can be tested without a ROS installation.
-The Gazebo backend uses the same limits from ``config/joint_limits.yaml``; the
-two backends are intentionally not bit-identical (Gazebo integrates physics,
-this plant integrates a first-order model). See docs/SIMULATION_MODEL.md.
+This module is ROS-free. Joint names and limits come from the robot profile, so
+the same model drives any device in the catalog. The Gazebo backend integrates
+real physics; the two backends are intentionally not bit-identical. See
+``docs/SIMULATION_MODEL.md``.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Mapping
-
-import yaml
-
-JOINT_ORDER = ("joint1", "joint2", "joint3", "joint4", "joint5", "r_joint")
+from typing import Iterable, Mapping
 
 
 @dataclass(frozen=True)
@@ -29,39 +24,29 @@ class JointLimit:
         return min(max(float(value), self.lower), self.upper)
 
 
-def load_joint_limits(path: str | Path) -> dict[str, JointLimit]:
-    """Load and validate ``config/joint_limits.yaml``.
+def validate_limits(limits: Mapping[str, JointLimit], joint_names: Iterable[str]) -> dict[str, JointLimit]:
+    """Return the limits in ``joint_names`` order, rejecting gaps and nonsense."""
 
-    The file must describe exactly :data:`JOINT_ORDER`; a missing or extra
-    joint is an error rather than a silent default.
-    """
-
-    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or data.get("schema_version") != 1:
-        raise ValueError(f"{path}: expected schema_version: 1")
-    joints = data.get("joints")
-    if not isinstance(joints, dict):
-        raise ValueError(f"{path}: missing joints mapping")
-    if set(joints) != set(JOINT_ORDER):
-        raise ValueError(
-            f"{path}: joints must be {list(JOINT_ORDER)}, got {sorted(joints)}"
-        )
-
-    limits: dict[str, JointLimit] = {}
-    for name in JOINT_ORDER:
-        entry = joints[name]
-        try:
-            lower = float(entry["lower"])
-            upper = float(entry["upper"])
-            velocity = float(entry["velocity"])
-        except (KeyError, TypeError) as exc:
-            raise ValueError(f"{path}: {name} needs lower/upper/velocity") from exc
-        if not lower < upper:
-            raise ValueError(f"{path}: {name} lower must be < upper")
-        if velocity <= 0.0:
-            raise ValueError(f"{path}: {name} velocity must be > 0")
-        limits[name] = JointLimit(lower=lower, upper=upper, velocity=velocity)
-    return limits
+    names = tuple(joint_names)
+    if not names:
+        raise ValueError("joint_names must not be empty")
+    if len(set(names)) != len(names):
+        raise ValueError("joint_names contains duplicates")
+    missing = set(names) - set(limits)
+    if missing:
+        raise ValueError(f"missing joint limits: {sorted(missing)}")
+    extra = set(limits) - set(names)
+    if extra:
+        raise ValueError(f"limits for unknown joints: {sorted(extra)}")
+    ordered: dict[str, JointLimit] = {}
+    for name in names:
+        limit = limits[name]
+        if not limit.lower < limit.upper:
+            raise ValueError(f"{name}: lower must be < upper")
+        if limit.velocity <= 0.0:
+            raise ValueError(f"{name}: velocity must be > 0")
+        ordered[name] = limit
+    return ordered
 
 
 class JointPlant:
@@ -75,32 +60,34 @@ class JointPlant:
     def __init__(
         self,
         limits: Mapping[str, JointLimit],
+        joint_names: Iterable[str],
         *,
         time_constant_s: float = 0.08,
         initial: Mapping[str, float] | None = None,
     ) -> None:
-        missing = set(JOINT_ORDER) - set(limits)
-        if missing:
-            raise ValueError(f"missing joint limits: {sorted(missing)}")
+        self._joint_names = tuple(joint_names)
+        self._limits = validate_limits(limits, self._joint_names)
         if time_constant_s <= 0.0:
             raise ValueError("time_constant_s must be > 0")
-
-        self._limits = {name: limits[name] for name in JOINT_ORDER}
         self._time_constant_s = float(time_constant_s)
         start = initial or {}
-        unknown = set(start) - set(JOINT_ORDER)
+        unknown = set(start) - set(self._joint_names)
         if unknown:
             raise ValueError(f"unknown initial joints: {sorted(unknown)}")
         self._positions = {
-            name: self._limits[name].clamp(start.get(name, 0.0)) for name in JOINT_ORDER
+            name: self._limits[name].clamp(start.get(name, 0.0)) for name in self._joint_names
         }
         self._targets = dict(self._positions)
-        self._velocities = {name: 0.0 for name in JOINT_ORDER}
+        self._velocities = {name: 0.0 for name in self._joint_names}
+
+    @property
+    def joint_names(self) -> tuple[str, ...]:
+        return self._joint_names
 
     def set_targets(self, positions: Mapping[str, float]) -> None:
         """Set position targets. Unknown joint names are rejected."""
 
-        unknown = set(positions) - set(JOINT_ORDER)
+        unknown = set(positions) - set(self._joint_names)
         if unknown:
             raise ValueError(f"unknown joints: {sorted(unknown)}")
         for name, value in positions.items():
@@ -111,7 +98,7 @@ class JointPlant:
 
         if not dt_s > 0.0:
             raise ValueError("dt_s must be > 0")
-        for name in JOINT_ORDER:
+        for name in self._joint_names:
             position = self._positions[name]
             target = self._targets[name]
             error = target - position

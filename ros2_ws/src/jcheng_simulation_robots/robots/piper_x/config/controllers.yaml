@@ -1,0 +1,56 @@
+# ros2_control controllers for the Piper X simulation plant.
+#
+# gz_ros2_control runs the controller_manager in the /sim namespace; keys are
+# fully qualified. Action surfaces:
+#   /sim/arm_controller/follow_joint_trajectory      (joint1…joint6)
+#   /sim/gripper_controller/follow_joint_trajectory  (gripper, prismatic)
+#   /sim/joint_states
+/sim/controller_manager:
+  ros__parameters:
+    update_rate: 100
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+/sim/arm_controller:
+  ros__parameters:
+    joints:
+      - joint1
+      - joint2
+      - joint3
+      - joint4
+      - joint5
+      - joint6
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity
+
+    open_loop_control: false
+
+/sim/gripper_controller:
+  ros__parameters:
+    joints:
+      - gripper
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity
+
+    open_loop_control: false
+
+/sim/gz_ros_control:
+  ros__parameters:
+    position_proportional_gain: 10.0

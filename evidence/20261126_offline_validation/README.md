@@ -1,5 +1,12 @@
 # 2026-11-26 — offline validation (jcheng-simulation)
 
+> Layout note (added later on 2026-11-26): this run used the original
+> single-package layout (`jcheng_simulation_bringup/config`, `urdf`, `worlds`)
+> and the timer-based Gazebo startup. The robot data now lives in
+> `ros2_ws/src/jcheng_simulation_robots/robots/armpi_ultra/` and the startup is
+> the fail-closed chain; the re-run under the engine is
+> [evidence/20261126_multi_robot_engine](../20261126_multi_robot_engine/README.md).
+
 Status: **pass, offline simulation only.** No hardware was accessed and no
 hardware motion was commanded. Operator: JerichoCheng.
 

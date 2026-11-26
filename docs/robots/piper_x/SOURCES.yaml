@@ -1,0 +1,127 @@
+# Piper X asset sources — repository-visible manifest
+
+# Schema: `jcheng.piper_x_asset_sources.v1`. Generated 2026-11-26.
+# This file is the text record that lets a machine or a person rebuild the
+# external asset bundle. The binaries are **not** in this repository; see
+# `README.md` in this directory and `scripts/fetch_piper_x_assets.sh`.
+# Licences were read at the pinned commits, not from a package index.
+
+schema: jcheng.piper_x_asset_sources.v1
+generated: "2026-11-26"
+asset_root:
+  default: "~/.local/share/jcheng/assets/piper_x"
+  env_override: JCHENG_ASSET_ROOT
+materialization:
+  files: 618
+  payload_bytes: 38673663
+  checksums: SHA256SUMS
+  checksum_verified: true
+  verification: "sha256sum -c SHA256SUMS: 618/618 OK; 6 revolute joints; 0 missing mesh paths."
+
+sources:
+  - id: agx_arm_urdf
+    repo: https://github.com/agilexrobotics/agx_arm_urdf
+    commit: 680fa925cd00db7e2628563d2edc5540963045de
+    commit_date: "2026-10-15T18:11:34Z"
+    license: MIT
+    copyright: "Copyright (c) 2026 aalicecc"
+    destination: agx_arm_urdf-680fa925
+    paths: [piper_x, agx_gripper]
+    role: "authoritative Piper X geometry, visual/collision meshes, inertials and joint limits"
+    key_hashes:
+      piper_x_description.urdf: "sha256:93eb2a84d01df81566a3c1ed275626d93a1c4275564a30c7899a35a672e265bb"
+      piper_x_with_gripper_description.xacro: "sha256:88561fe45a3f4e639c7a233b13574d88d7707b545110cb30b983e360cdb57420"
+    notes:
+      - "Commit 680fa925 corrects link6 inertia for the Piper family; 2026-10-13 corrected J6 limits to +/-170 deg."
+      - "Mesh URIs use package://agx_arm_description/agx_arm_urdf/...; a ROS package named agx_arm_description must contain agx_arm_urdf/ at that path."
+  - id: agx_arm_ros
+    repo: https://github.com/agilexrobotics/agx_arm_ros
+    branch: ros2
+    commit: 747d0722074d4cebc095d8d44f3ef68d2023ba6f
+    commit_date: "2026-11-19T04:06:13Z"
+    license: MIT
+    copyright: "Copyright (c) 2026 aalicecc"
+    destination: agx_arm_ros-747d0722
+    paths:
+      - src/agx_arm_ctrl
+      - src/agx_arm_description
+      - src/agx_arm_moveit
+      - src/agx_arm_msgs
+      - docs
+    role: "ROS 2 driver, MoveIt2/SRDF/ros2_control configs, CAN and TCP-offset documentation"
+    key_hashes:
+      agx_arm.srdf.xacro: "sha256:a9fbd8a83f57e4e75687cba6c746bf7344a2ae03c4f83e82da4c23bed3a1418e"
+      joint_limits.yaml: "sha256:e88ab639f70befb7f573c426c3cb853f22889ce1c2096d385d83226bdf4a57ff"
+      agx_arm.urdf.xacro: "sha256:ab4b8b16f8ce532a9a448f4032befc3cce85377671a55e2bc560bad74d817443"
+      agx_arm.ros2_control.xacro: "sha256:ce846c35053787381c66fe35cb7bb2246cf301f9bcfb17ac12cc04b79c79402a"
+    notes:
+      - "agx_arm_ctrl imports pyAgxArm; package.xml does not declare it, so it is a pip dependency."
+      - "Vendor topics/services (feedback/*, control/*, emergency_stop) are not JCHENG contracts."
+  - id: piper_sdk
+    repo: https://github.com/agilexrobotics/piper_sdk
+    commit: b847e5393a7ce6ff8508d713eca7bdd3a42421b4
+    commit_date: "2026-10-14T02:38:23Z"
+    license: MIT
+    copyright: "Copyright (c) 2024 Agilex Robotics Co., Ltd."
+    destination: piper_sdk-b847e539
+    role: "legacy Python CAN SDK and V2/V3 protocol reference"
+    notes:
+      - "README points new work at pyAgxArm; it does not name Piper X."
+  - id: pyAgxArm
+    repo: https://github.com/agilexrobotics/pyAgxArm
+    commit: d90e234ba8e408cfa964b38aa9120b3131fc9f85
+    commit_date: "2026-10-15T07:33:08Z"
+    license: LGPL-3.0
+    destination: pyAgxArm-d90e234b
+    role: "current Python SDK used by agx_arm_ros; explicit ArmModel.PIPER_X"
+    notes:
+      - "LGPL-3.0: dependency use is not the same as copying; review obligations before redistribution or modification."
+      - "constants.py ROBOT_JOINT_LIMIT_PRESET_RAD['piper_x'] and ROBOT_MDH_PRESET['piper_x'] match the MIT URDF joint limits and origins (J6 +/-170 deg, d6=0.03526)."
+
+not_fetched:
+  - id: agx_arm_sim
+    repo: https://github.com/agilexrobotics/agx_arm_sim
+    commit: f8cd8b147c75d59e14f90fb0646770eefa268ed0
+    license: "none (README says MIT; no LICENSE file)"
+    reason: "Piper X MoveIt/Gazebo/USD assets exist but cannot be redistributed until the licence is written."
+  - id: piper_isaac_sim
+    repo: https://github.com/agilexrobotics/piper_isaac_sim
+    commit: 8e1f88fdb7afca49c40e9a0c1c01cc588e86f0d2
+    license: none
+    reason: "Older 8-joint Piper X URDF and USD; no licence and the kinematic model differs from the MIT URDF."
+  - id: mujoco_menagerie_agilex_piper
+    repo: https://github.com/google-deepmind/mujoco_menagerie
+    commit: eea4c7431b63da8278b0ff31638e0b0e941cec0e
+    license: MIT
+    reason: "Clean MuJoCo model, but for the standard Piper, not Piper X."
+  - id: AB-pixel-pixel_piper-X
+    repo: https://github.com/AB-pixel-pixel/piper-X
+    commit: ea390f5bd4dc31865f23bed68f54c68bddcf79f6
+    license: none
+    reason: "Community MuJoCo conversion pipeline; approach is reusable, files are not."
+  - id: mamengyiyi_PiperX-ToolKit
+    repo: https://github.com/mamengyiyi/PiperX-ToolKit
+    commit: e2d47da231ed461a5f7f82d406e73995848d5576
+    license: none
+    reason: "Dual-PiperX teleoperation and LeRobot capture; relevant but unlicensed."
+  - id: justagist_piper_cpp
+    repo: https://github.com/justagist/piper_cpp
+    commit: 01e1616e076fd0324f79ca6cee2ae0d7b23ba370
+    license: MIT
+    reason: "C++ SDK/ROS 2 alternative; Piper X support not verified."
+  - id: Reimagine-Robotics_piper_ros
+    repo: https://github.com/Reimagine-Robotics/piper_ros
+    commit: 011be5fbc5a968cc06f044339ae6ee25f0cdbd7b
+    license: MIT
+    reason: "Alternative ROS 2 driver; standard Piper, Piper X support not verified."
+  - id: xdongmiao_pico-piper-teleop
+    repo: https://github.com/xdongmiao/pico-piper-teleop
+    commit: 658acf7f91eb4ab628d6c8b2e17723743dc19261
+    license: Apache-2.0
+    reason: "Pico VR teleoperation and LeRobot capture for dual PiPER; standard Piper, not Piper X."
+
+policy:
+  - "Do not commit *.stl, *.dae, *.obj, USD, MJCF or model weights to this repository; scripts/check_repo_gate.sh rejects meshes anywhere in the tree."
+  - "Do not copy a repository whose only licence claim is a README; require a LICENSE file or written permission."
+  - "Keep the upstream LICENSE next to every fetched source; keep SHA256SUMS and PROVENANCE.json in the asset bundle."
+  - "Generate Gazebo/MuJoCo/Isaac assets from the MIT URDF; do not import the unlicensed prebuilt assets."

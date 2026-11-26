@@ -81,9 +81,87 @@
 None. If one is produced later, it must validate against
 `jcheng-interfaces/schemas/acceptance-report.v1.schema.json`.
 
-## 7. Related
+## 7. Addendum — migrated 2-DoF arm plant (2026-11-26)
+
+Second plant, added under [ADR 0002](docs/adr/0002-second-plant-migrated-arm.md).
+Offline only; no hardware path. Full log excerpts:
+[evidence/20261126_migrated_arm/README.md](evidence/20261126_migrated_arm/README.md).
+
+| Gate | Command | Level | Result |
+|---|---|---|---|
+| Build | `colcon build --packages-select jcheng_simulation_arm` | L0 | pass |
+| Package test (ROS sourced) | `python3 -m pytest -q ros2_ws/src/jcheng_simulation_arm/test` | L0/L1 | pass (9 tests) |
+| URDF expansion | `xacro simple_arm.xacro` | L0 | pass (166 lines) |
+| Robot and world SDF | `gz sdf -p …` | L0 | pass (181 / 68 lines) |
+| Launch descriptions | `ros2 launch … --show-args` (both launches) | L0 | pass |
+| Headless plant end-to-end | domain 43, controllers active after 3 s | L2 | pass |
+| Simulated arm trajectory | `FollowJointTrajectory` to `[0.3, -0.2]` | L2 | pass (`error_code: 0`) |
+| Repository gate | `bash scripts/check_repo_gate.sh` | L0 | pass (53 passed, 5 skipped without ROS) |
+
+Not verified for this plant: geometric accuracy, grasp/contact, servo dynamics,
+controller-level limit enforcement, runtime behavior of the `gain_0p1` /
+`gain_0p2` profiles, GUI mode. At the time of this run `/sim/truth/source` was
+not published by this plant (only the mock backend published it); the engine
+addendum (§8) adds the truth publisher to every Gazebo backend. L5 remains
+**not applicable**.
+
+Sign-off: operator JerichoCheng, 2026-11-26; reviewer pending.
+
+## 8. Addendum — multi-robot engine consolidation (2026-11-26)
+
+The per-package plants were consolidated into one engine and a catalog under
+[ADR 0003](docs/adr/0003-multi-robot-engine.md). Offline only; no hardware
+path. Full log excerpts:
+[evidence/20261126_multi_robot_engine/README.md](evidence/20261126_multi_robot_engine/README.md).
+
+| Gate | Command | Level | Result |
+|---|---|---|---|
+| Build (engine + 2 wrappers) | `colcon build --packages-select jcheng_simulation_robots jcheng_simulation_bringup jcheng_simulation_arm` | L0 | pass |
+| Repository + engine tests (ROS sourced) | `python3 -m pytest -q tests ros2_ws/src/jcheng_simulation_robots/test` | L0/L1 | pass (85 tests) |
+| Catalog validation | `bash scripts/check_repo_gate.sh` | L0 | pass (2 profiles, 3 controller profiles) |
+| `armpi_ultra` mock backend | engine, domain 43 | L2 | pass (joints, scan, truth) |
+| `gate2_arm` mock backend | engine, domain 43 | L2 | pass (2 joints, no scan) |
+| `gate2_arm` Gazebo backend | engine, headless | L2 | pass (3 s, JTC `error_code: 0`) |
+| `armpi_ultra` Gazebo backend | engine, headless | L2 | pass (5 s, 3 controllers, scan + camera, JTC `error_code: 0`) |
+
+The earlier single-package runs remain as historical evidence
+([offline validation](evidence/20261126_offline_validation/README.md),
+[migrated arm](evidence/20261126_migrated_arm/README.md)); their files moved
+into the catalog and their startup path was replaced by the fail-closed chain.
+
+Not verified in this addendum: geometric accuracy, grasp/contact, servo
+dynamics, controller-level limit enforcement, runtime characterization of the
+controller gain profiles, GUI mode. L5 remains **not applicable**.
+
+Sign-off: operator JerichoCheng, 2026-11-26; reviewer pending.
+
+## 9. Addendum — Piper X external-asset profile (2026-11-26)
+
+Third catalog entry, pointing at the MIT description kept outside git. Offline
+only; no hardware path. Details:
+[evidence §11](evidence/20261126_multi_robot_engine/README.md) and
+[docs/robots/piper_x/](docs/robots/piper_x/README.md).
+
+| Gate | Command | Level | Result |
+|---|---|---|---|
+| Profile + controller validation without assets | `pytest -q tests` | L0/L1 | pass |
+| Catalog reports `model=unavailable` without assets | `bash scripts/check_repo_gate.sh` | L0 | pass |
+| External URDF expansion + wrapper (assets present) | engine test | L0 | pass |
+| Mock backend (7 joints, truth, commands) | domain 43 | L2 | pass |
+| Gazebo backend (controllers active, arm + gripper goals) | domain 43, headless | L2 | **partially verified** (residual ≤ ~0.04 rad; tracking uncharacterised) |
+
+Not verified: mimic finger motion (physics-engine limitation), collision-mesh
+fidelity, contact/grasp, tracking accuracy, CAN bridge and hardware. L5 remains
+**not applicable**.
+
+Sign-off: operator JerichoCheng, 2026-11-26; reviewer pending.
+
+## 10. Related
 
 - [README](README.md)
 - [ROADMAP](ROADMAP.md)
 - [Offline validation evidence](evidence/20261126_offline_validation/README.md)
+- [Migrated arm evidence](evidence/20261126_migrated_arm/README.md)
+- [Multi-robot engine evidence](evidence/20261126_multi_robot_engine/README.md)
+- [Migration record](docs/MIGRATION-2026-11-26-baseline-arm.md)
 - [Architecture](docs/ARCHITECTURE.md)
