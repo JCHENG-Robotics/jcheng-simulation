@@ -15,8 +15,7 @@ Everything is confined to ROS domain 43. Nothing opens a device, joins domains
 > primitive and provisional, and no model has a second gripper finger, a depth
 > stream or a mobile base. Two robots are in the catalog; adding a device is one
 > directory plus a profile — see [docs/MULTI_ROBOT.md](docs/MULTI_ROBOT.md).
-> English canonical; see [README.zh-CN.md](README.zh-CN.md) for the Chinese
-> translation.
+> English canonical; the Chinese README is a translation.
 
 ## Scope and boundary
 
