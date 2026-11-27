@@ -108,8 +108,8 @@ jcheng-simulation/
   `joint_trajectory_controller`, `robot_state_publisher`, `xacro`.
 - **Engine build/test:** `ament_cmake_python`; `joint_state_publisher_gui` and
   `rviz2` only for `display.launch.py gui:=true`.
-- **Contract:** `jcheng-interfaces` `>=0.1,<0.2`, contract hash
-  `sha256:0b8d72ce…f24b42`.
+- **Contract:** `jcheng-interfaces` `>=0.2,<0.3`, contract hash
+  `sha256:afca22a4…c35b1c`.
 - No hardware is required or accessed. The robot's Humble stack is not used by
   this repository.
 
