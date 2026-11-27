@@ -1,10 +1,10 @@
-# Copy of the organization CODEOWNERS template, adjusted for this repository.
+# Two-reviewer model (adopted 2026-11-23). Both maintainers can approve.
 # GitHub does not apply CODEOWNERS from the .github repository to other repos.
 
-* @JerichoCheng
+* @JerichoCheng @JerichoSwaine
 
-/docs/            @JerichoCheng
-/.github/         @JerichoCheng
-/ros2_ws/src/*/config/  @JerichoCheng
-/ros2_ws/src/*/urdf/    @JerichoCheng
-/ros2_ws/src/*/worlds/  @JerichoCheng
+/docs/            @JerichoCheng @JerichoSwaine
+/.github/         @JerichoCheng @JerichoSwaine
+/ros2_ws/src/*/config/  @JerichoCheng @JerichoSwaine
+/ros2_ws/src/*/urdf/    @JerichoCheng @JerichoSwaine
+/ros2_ws/src/*/worlds/  @JerichoCheng @JerichoSwaine
