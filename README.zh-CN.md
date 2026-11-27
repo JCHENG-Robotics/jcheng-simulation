@@ -99,8 +99,8 @@ jcheng-simulation/
   `robot_state_publisher`、`xacro`。
 - **引擎构建/测试：** `ament_cmake_python`；`joint_state_publisher_gui` 与 `rviz2`
   仅用于 `display.launch.py gui:=true`。
-- **契约：** `jcheng-interfaces` `>=0.1,<0.2`，契约哈希
-  `sha256:0b8d72ce…f24b42`。
+- **契约：** `jcheng-interfaces` `>=0.2,<0.3`，契约哈希
+  `sha256:afca22a4…c35b1c`。
 - 不需要也不访问硬件。机器人上的 Humble 栈不被本仓库使用。
 
 ## 快速开始
