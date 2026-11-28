@@ -18,7 +18,7 @@ TOP_LEVEL = {
     "runtime",
 }
 CONTRACT_HASH = (
-    "sha256:afca22a42f7163e0351d185d5a8577b0b51f2f3da4b92278f161a4a7d2c35b1c"
+    "sha256:8bc92d18a503ec54db443596eec232b5117f4c6d510f7493d4e107b93a5d3358"
 )
 
 
@@ -38,7 +38,7 @@ def test_contract_hash_and_ranges():
     assert set(contract) == {"interfaces", "contract_hash", "system_api"}
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", contract["contract_hash"])
     assert contract["contract_hash"] == CONTRACT_HASH
-    assert contract["interfaces"] == ">=0.2,<0.3"
+    assert contract["interfaces"] == ">=0.3,<0.4"
     assert contract["system_api"] == ">=0.1,<0.2"
 
 
