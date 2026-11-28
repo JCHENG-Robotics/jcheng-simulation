@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
-          python-version: "3.10"
+          python-version: "3.12"
       - name: Install test dependencies
         shell: bash
         run: |
@@ -39,7 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: ros:jazzy-ros-base
+      # ros:jazzy-ros-base, multi-arch index digest (Docker Hub, 2026-11-28)
+      image: ros:jazzy-ros-base@sha256:5147d3ae250ce754afd399f6bfec15b33dd4e473ca357e30432a3182031bfad6
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:

@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Changed
+
+- The contract job uses Python 3.12, matching the Jazzy/Ubuntu 24.04 default
+  toolchain. The ROS build already ran on `ros:jazzy-ros-base`.
+
 ### Added
 
 - Multi-robot plant engine `jcheng_simulation_robots`: a `robot.yaml` catalog
